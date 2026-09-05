@@ -32,7 +32,7 @@ chmod +x *.sh
 Run the complete pipeline using:
 
 ```bash
-./video_to_gsplat.sh <fps> <input_video_path> <sfm_output_dir> <gsplat_output_dir_path>
+./video_to_gsplat.sh <fps> <input_video_path> <sfm_output_dir> <gsplat_output_dir_path> [--disable_gpu] [--exhaustive]
 ```
 
 ### Parameters:
@@ -41,6 +41,8 @@ Run the complete pipeline using:
 - `input_video_path`: Path to input video file
 - `sfm_output_dir`: Directory for COLMAP output
 - `gsplat_output_dir_path`: Directory for final 3D Gaussian Splatting model
+- `--disable_gpu` (optional): Run COLMAP on CPU. Use this if you have no CUDA-capable GPU.
+- `--exhaustive` (optional): Use exhaustive instead of sequential matching. Slower, but more robust on non-sequential footage.
 
 ### Example:
 
@@ -67,7 +69,7 @@ ffmpeg -i <input_video> -vf "fps=<target_fps>" "frames/frame_%04d.png"
 
 ### COLMAP Processing
 ```bash
-./colmap_undistorted_sfm_export.sh <input_images> <output_dir> [--sequential] [--enable_gpu]
+./colmap_undistorted_sfm_export.sh <input_images> <output_dir> [--exhaustive] [--disable_gpu]
 ```
 
 ### Speedy-Splat Training
@@ -84,7 +86,8 @@ Key Speedy-Splat training parameters:
 - Position Learning Rate: 0.001 (initial) to 0.0001 (final)
 - Feature Learning Rate: 0.0001
 - Densification Interval: 1000
-- Checkpoint Interval: 1000
+- Checkpoint Iterations: 500 (`--checkpoint_iterations` is a list of iterations at which to write a `.pth` checkpoint, not an interval)
+- Save Iterations: 2000 and 10000 (train.py always appends the final `--iterations` value)
 
 ## Output Structure
 
@@ -110,13 +113,15 @@ sfm_output_dir/
 ### GS Output Directory (`gsplat_output_dir`)
 ```
 gsplat_output_dir/
-├── checkpoints/        # Training checkpoints
-│   ├── iteration_2000/
-│   ├── iteration_4000/
-│   └── iteration_final/
-└── point_cloud/       # Point clouds
-    ├── iteration_4000/
-    └───── point_cloud.ply
+├── chkpnt500.pth       # Training checkpoint (one per --checkpoint_iterations value)
+├── cameras.json        # Camera parameters used for training
+├── input.ply           # Initial sparse point cloud
+├── cfg_args            # Training configuration
+└── point_cloud/        # Trained Gaussians
+    ├── iteration_2000/
+    │   └── point_cloud.ply
+    └── iteration_10000/
+        └── point_cloud.ply
 ```
 
 # Viewing Results
@@ -135,7 +140,7 @@ The PLY files (found in `gsplat_output_dir/point_cloud/` directory) can be viewe
 
 ## COLMAP Issues
 1. **CUDA/GPU Errors**:
-   - If COLMAP fails with CUDA errors, try using `--disable_gpu` option
+   - If COLMAP fails with CUDA errors, pass `--disable_gpu` (supported by both `video_to_gsplat.sh` and `colmap_undistorted_sfm_export.sh`)
    - Ensure CUDA drivers are up to date
    - Try reducing the maximum image resolution if GPU memory is insufficient
 
@@ -151,7 +156,7 @@ The PLY files (found in `gsplat_output_dir/point_cloud/` directory) can be viewe
 1. **Training Stability**:
    - If training diverges, try reducing position_lr_init to 0.0005
    - Increase densification_interval to 2000 for complex scenes
-   - Use checkpoint_iterations=500 for more frequent saves
+   - Pass multiple values to `--checkpoint_iterations` (e.g. `500 2000 5000`) for more frequent checkpoints
 
 2. **Output Quality**:
    - Poor reconstruction might indicate insufficient camera coverage

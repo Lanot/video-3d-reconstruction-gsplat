@@ -22,12 +22,20 @@ fi
 SFM_INPUT_DIR="$1"  # Directory containing undistorted images from SfM
 GSPLAT_OUTPUT_DIR="$2"  # Directory to save the output model
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [ ! -f "$SCRIPT_DIR/speedy-splat/train.py" ]; then
+    echo "ERROR: $SCRIPT_DIR/speedy-splat/train.py not found."
+    echo "The speedy-splat submodule is missing. Run: git submodule update --init --recursive"
+    exit 1
+fi
+
 # Create necessary directories if they don't exist
 mkdir -p "$GSPLAT_OUTPUT_DIR"
 
 echo "Running Speedy Splat training..."
 
-python speedy-splat/train.py \
+python "$SCRIPT_DIR/speedy-splat/train.py" \
     --source_path "$SFM_INPUT_DIR" \
     --model_path "$GSPLAT_OUTPUT_DIR" \
     --resolution 1024 \
