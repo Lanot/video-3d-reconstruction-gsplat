@@ -50,7 +50,7 @@ mkdir -p "$OUTPUT_DIR"
 ###########################################
 echo "Running feature extraction (GPU enabled: $ENABLE_GPU)..."
 colmap feature_extractor \
-    --SiftExtraction.use_gpu=$ENABLE_GPU \
+    --FeatureExtraction.use_gpu=$ENABLE_GPU \
     --database_path "$DATABASE_PATH" \
     --image_path "$INPUT_IMAGES"
 
@@ -65,12 +65,12 @@ fi
 if [ "$MATCHER_MODE" == "exhaustive" ]; then
     echo "Running exhaustive matcher (GPU enabled: $ENABLE_GPU)..."
     colmap exhaustive_matcher \
-        --SiftMatching.use_gpu=$ENABLE_GPU \
+        --FeatureMatching.use_gpu=$ENABLE_GPU \
         --database_path "$DATABASE_PATH"
 else
     echo "Running sequence matcher (GPU enabled: $ENABLE_GPU)..."
     colmap sequential_matcher \
-        --SiftMatching.use_gpu=$ENABLE_GPU \
+        --FeatureMatching.use_gpu=$ENABLE_GPU \
         --database_path "$DATABASE_PATH"
 fi
 
